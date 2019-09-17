@@ -1,10 +1,8 @@
 package cn.wuxia.tools.excel;
 
 import cn.wuxia.common.exception.ValidateException;
+import cn.wuxia.common.util.*;
 import cn.wuxia.common.util.DateUtil;
-import cn.wuxia.common.util.ListUtil;
-import cn.wuxia.common.util.StringUtil;
-import cn.wuxia.common.util.ValidatorUtil;
 import cn.wuxia.common.util.reflection.ReflectionUtil;
 import cn.wuxia.tools.excel.annotation.ExcelColumn;
 import cn.wuxia.tools.excel.exception.ExcelException;
@@ -23,10 +21,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  * [ticket id] Description of the class
@@ -35,8 +32,6 @@ import java.util.List;
  */
 public class ImportExcelUtil {
     private static final Logger logger = LoggerFactory.getLogger(ImportExcelUtil.class);
-
-    private static final int MAX_ROWS = 65535;
 
 
     /**
@@ -49,8 +44,28 @@ public class ImportExcelUtil {
     public static <T> List<T> importExcel(File file, Class<T> clazz) throws ExcelException {
         if (file != null && file.exists() && !file.isDirectory()) {
             try {
-                return importExcel(FileUtils.openInputStream(file), clazz);
-            } catch (IOException | EncryptedDocumentException | InvalidFormatException e) {
+                return importExcel(FileUtils.openInputStream(file), clazz, 0);
+            } catch (IOException | EncryptedDocumentException e) {
+                logger.error("", e);
+                throw new ExcelException("文件不存在！", e);
+            }
+        } else {
+            throw new ExcelException("文件不存在！");
+        }
+    }
+
+    /**
+     * 导入xls文档
+     *
+     * @param file
+     * @param clazz 需要导入的xls文件
+     * @author songlin.li
+     */
+    public static <T> List<T> importExcel(File file, int sheetIndex, Class<T> clazz) throws ExcelException {
+        if (file != null && file.exists() && !file.isDirectory()) {
+            try {
+                return importExcel(FileUtils.openInputStream(file), clazz, sheetIndex);
+            } catch (IOException | EncryptedDocumentException e) {
                 logger.error("", e);
                 throw new ExcelException("文件不存在！", e);
             }
@@ -70,13 +85,30 @@ public class ImportExcelUtil {
      * @author songlin.li
      */
     public static <T> List<T> importExcel(InputStream inputStream, Class<T> clazz)
-            throws ExcelException, EncryptedDocumentException, InvalidFormatException, IOException {
+            throws ExcelException, EncryptedDocumentException, IOException {
+        return importExcel(inputStream, clazz, 0);
+    }
+
+    /**
+     * 导入xls文档
+     * 如果导入数据太大，请使用👇这种方法
+     *
+     * @param inputStream
+     * @param clazz       需要导入的xls文件
+     * @throws IOException
+     * @throws InvalidFormatException
+     * @throws EncryptedDocumentException
+     * @author songlin.li
+     * @see {@link com.alibaba.excel.EasyExcelFactory#read(InputStream, new Sheet(1, 1,BaseRowModel.class))};
+     */
+    public static <T> List<T> importExcel(InputStream inputStream, Class<T> clazz, int sheetIndex)
+            throws ExcelException, EncryptedDocumentException, IOException {
         // 创建最终返回的集合
         List<T> lists = new ArrayList<>();
         // 获得工作薄
         Workbook wb = WorkbookFactory.create(inputStream);
         // 获得第一个工作单
-        Sheet sheet = wb.getSheetAt(0);
+        Sheet sheet = wb.getSheetAt(sheetIndex);
         // 获得行迭带器
         Iterator<Row> rows = sheet.iterator();
 
@@ -116,14 +148,16 @@ public class ImportExcelUtil {
     public static boolean isRowEmpty(Row row) {
         for (int c = row.getFirstCellNum(); c < row.getLastCellNum(); c++) {
             Cell cell = row.getCell(c);
-            if (cell != null && CellType.BLANK.compareTo(cell.getCellTypeEnum()) != 0)
+            if (cell != null && CellType.BLANK.compareTo(cell.getCellType()) != 0) {
                 return false;
+            }
         }
         return true;
     }
 
 
-    public static <T> T getRowObject(Row row, Class<T> clazz) throws ExcelException, InstantiationException, IllegalAccessException {
+    public static <T> T getRowObject(Row row, Class<T> clazz) throws ExcelException, InstantiationException,
+            IllegalAccessException {
         // 创建集合用于保存一行的单元格数据
         List<String> exceptions = Lists.newArrayList();
         // 创建对象,注入数据
@@ -148,7 +182,8 @@ public class ImportExcelUtil {
                             setFieldCellValue(cell, obj, field);
                         }
                     } catch (ExcelException e) {
-                        exceptions.add("第" + (excelHead.colunmIndex() + 1) + "列，表头为：" + excelHead.columnName() + "，赋值属性名：" + field.getName() + "，值："
+                        exceptions.add("第" + (excelHead.colunmIndex() + 1) + "列，表头为：" + excelHead.columnName() +
+                                "，赋值属性名：" + field.getName() + "，值："
                                 + ReflectionUtil.getFieldValue(obj, field.getName()) + "【详细错误】" + e.getMessage());
                     }
                 } else {
@@ -175,12 +210,12 @@ public class ImportExcelUtil {
      * @return
      * @author songlin.li
      */
-    public static void setFieldCellValue(Cell cell, Object bean, Field field) {
+    public static void setFieldCellValue(Cell cell, Object bean, Field field) throws ExcelException {
         if (cell == null) {
             return;
         }
         Object fieldValue = null;
-        CellType cellType = cell.getCellTypeEnum();
+        CellType cellType = cell.getCellType();
         String fieldType = field.getType().getName();
         switch (cellType) {
             case STRING:
@@ -194,15 +229,17 @@ public class ImportExcelUtil {
                     ExcelColumn an = field.getAnnotation(ExcelColumn.class);
                     java.util.Date value2 = org.apache.poi.ss.usermodel.DateUtil.getJavaDate((Double) value);
                     fieldValue = DateUtil.dateToString(value2, an.dateFormat());
-                } else if (fieldType.equals("java.lang.Integer") || fieldType.equals("int") || fieldType.equals("java.lang.Long")
+                } else if (fieldType.equals("java.lang.Integer") || fieldType.equals("int") || fieldType.equals("java" +
+                        ".lang.Long")
                         || fieldType.equals("long")) {
                     DecimalFormat df = new DecimalFormat("#");// 转换成整型
                     fieldValue = df.format(value);
                 } else if (fieldType.equals("java.lang.String")) {
                     cell.setCellType(CellType.STRING);
                     fieldValue = StringUtil.trim(cell.getStringCellValue());
-                } else
+                } else {
                     fieldValue = value;
+                }
                 break;
             case BOOLEAN:
                 fieldValue = cell.getBooleanCellValue();
@@ -225,5 +262,31 @@ public class ImportExcelUtil {
                 throw new ExcelException("无法赋值，原因是字段类型：" + field.getType() + "，值类型：" + fieldValue.getClass() + "，值：" + fieldValue);
             }
         }
+    }
+
+
+    //判断 并转换时间格式 ditNumber = 43607.4166666667
+    public static Date parseExcelTime(String ditNumber) {
+        //如果不是数字
+        if (!NumberUtil.isNumber(ditNumber)) {
+            return null;
+        }
+        //如果是数字 小于0则 返回
+        BigDecimal bd = new BigDecimal(ditNumber);
+        int days = bd.intValue();//天数
+        int mills = (int) Math.round(bd.subtract(new BigDecimal(days)).doubleValue() * 24 * 3600);
+
+        //获取时间
+        Calendar c = Calendar.getInstance();
+        c.set(1900, 0, 1);
+        c.add(Calendar.DATE, days - 2);
+        int hour = mills / 3600;
+        int minute = (mills - hour * 3600) / 60;
+        int second = mills - hour * 3600 - minute * 60;
+        c.set(Calendar.HOUR_OF_DAY, hour);
+        c.set(Calendar.MINUTE, minute);
+        c.set(Calendar.SECOND, second);
+
+        return c.getTime();
     }
 }

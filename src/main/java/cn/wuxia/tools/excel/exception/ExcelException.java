@@ -1,13 +1,13 @@
 package cn.wuxia.tools.excel.exception;
 
 /**
- * 
  * [ticket id]
- * Description of the class 
+ * Description of the class
+ *
  * @author songlin.li
  * @ Version : V<Ver.No> <2013年6月30日>
  */
-public class ExcelException extends RuntimeException {
+public class ExcelException extends Exception {
 
     private static final long serialVersionUID = -2623309261327598087L;
 

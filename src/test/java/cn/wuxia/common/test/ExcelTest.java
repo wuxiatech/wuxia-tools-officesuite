@@ -14,6 +14,7 @@ import cn.wuxia.tools.excel.bean.ExcelBean;
 import jodd.typeconverter.TypeConverterManager;
 
 import java.io.FileOutputStream;
+import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.util.*;
 
@@ -62,13 +63,19 @@ public class ExcelTest {
         Object convertValue = TypeConverterManager.get().convertType("123", BigDecimal.class);
         System.out.println(convertValue + "" + convertValue.getClass());
 
-        convertValue = ConvertUtil.convert("2017/10/20 22:22:22", Date.class);
-        System.out.println(convertValue + "" + convertValue.getClass());
-        convertValue = TypeConverterManager.get().convertType("2017/10/20 22:22:22", Date.class);
-        System.out.println(convertValue + "" + convertValue.getClass());
+//        convertValue = ConvertUtil.convert("2017/10/20 22:22:22", Date.class);
+//        System.out.println(convertValue + "" + convertValue.getClass());
+//        convertValue = TypeConverterManager.get().convertType("2017/10/20 22:22:22", Date.class);
+//        System.out.println(convertValue + "" + convertValue.getClass());
 
 
         convertValue = TypeConverterManager.get().convertType("2017-10-20", java.sql.Date.class);
         System.out.println(convertValue + "" + convertValue.getClass());
+
+        try {
+            System.out.println(new String("中文.xls".getBytes("UTF-8"), "ISO-8859-1"));
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
     }
 }

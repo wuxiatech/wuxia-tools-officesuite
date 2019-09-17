@@ -1,10 +1,17 @@
 package cn.wuxia.tools.excel;
 
 import cn.wuxia.common.exception.AppServiceException;
+import cn.wuxia.common.util.DateUtil;
+import cn.wuxia.common.util.ListUtil;
 import cn.wuxia.common.util.StringUtil;
 import cn.wuxia.common.util.SystemUtil;
+import cn.wuxia.common.util.reflection.ReflectionUtil;
+import cn.wuxia.tools.excel.annotation.ExcelColumn;
 import cn.wuxia.tools.excel.bean.ExcelBean;
+import cn.wuxia.tools.excel.exception.ExcelException;
+import com.alibaba.excel.support.ExcelTypeEnum;
 import org.apache.commons.beanutils.BeanUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.poi.hssf.usermodel.*;
 import org.apache.poi.hssf.util.HSSFColor.HSSFColorPredefined;
 import org.apache.poi.ss.usermodel.*;
@@ -17,6 +24,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.net.URLEncoder;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -339,6 +347,7 @@ public class ExportExcelUtil {
         cellStyle.setRightBorderColor((short) 8);
         cellStyle.setBottomBorderColor((short) 8);
         cellStyle.setTopBorderColor((short) 8);
+
         return cellStyle;
     }
 
@@ -353,6 +362,7 @@ public class ExportExcelUtil {
      * @param response
      * @author songlin.li
      */
+    @Deprecated
     public static void export(String excelName, String sheetName, String[] excelHeader, List<?> lists, HttpServletRequest request,
                               HttpServletResponse response) {
         try {
@@ -408,4 +418,101 @@ public class ExportExcelUtil {
     }
 
 
+    /**
+     * 按照指定列名导出为excel
+     * 更灵活更多扩展方法参考easyExcel
+     * <pre>
+     *     ExcelWriter writer = new ExcelWriter(out, ExcelTypeEnum.XLSX, true);
+     *
+     *             Sheet sheet1 = new Sheet(1, 0);
+     *             sheet1.setSheetName("sheet1");
+     *             Table table2 = new Table(1);
+     * //            table2.setTableStyle(createTableStyle());
+     *             table2.setClazz(BaseRowModel.class);
+     *             writer.write(exportBeanList, sheet1, table2);
+     *
+     *             writer.finish();
+     * </pre>
+     * @param lists
+     * @param excelType
+     * @param outputStream
+     * @author songlin.li
+     */
+    public static void export(List<?> lists, ExcelTypeEnum excelType, OutputStream outputStream) throws ExcelException {
+        try {
+            // 创建Excel对象
+            Workbook wb = null;
+
+            switch (excelType) {
+                case XLS:
+                    wb = new HSSFWorkbook();
+                    break;
+                case XLSX:
+                    wb = new XSSFWorkbook();
+                    break;
+                default:
+                    break;
+            }
+            // 创建工作单
+            Sheet sheet = wb.createSheet("sheet1");
+
+            // 创建行对象
+            Row row = sheet.createRow(0);
+
+            // 创建标题
+            Object o = lists.get(0);
+            // 创建单元格对象
+            List<ExcelColumn> excelColumn = ReflectionUtil.getAnnotations(o, ExcelColumn.class);
+            if (ListUtil.isEmpty(excelColumn)) {
+                throw new ExcelException("字段缺少@ExcelColumn注解");
+            }
+            CellStyle cs = null;
+
+            if (wb instanceof HSSFWorkbook) {
+                cs = setHSSFCellStyle((HSSFWorkbook) wb, true);
+            } else if (wb instanceof XSSFWorkbook) {
+                cs = setXSSFCellStyle((XSSFWorkbook) wb, true);
+            }
+            for (ExcelColumn excelHeader : excelColumn) {
+                Cell cell = row.createCell(excelHeader.colunmIndex());
+                cell.setCellValue(excelHeader.columnName());
+                cell.setCellStyle(cs);
+            }
+
+
+            List<Field> fields = ReflectionUtil.getAccessibleFields(o.getClass(), false);
+            if (wb instanceof HSSFWorkbook) {
+                cs = setHSSFCellStyle((HSSFWorkbook) wb, false);
+            } else if (wb instanceof XSSFWorkbook) {
+                cs = setXSSFCellStyle((XSSFWorkbook) wb, false);
+            }
+            // 创建数据
+            for (int i = 0; i < lists.size(); i++) {
+                row = sheet.createRow(i + 1);
+                Object obj = lists.get(i);
+                for (Field field : fields) {
+                    ExcelColumn excelHeader = ReflectionUtil.getAnnotation(field, ExcelColumn.class);
+                    if (excelHeader == null) {
+                        continue;
+                    }
+                    Object value = ReflectionUtil.invokeGetterMethod(obj, field.getName());
+                    if (null == value) {
+                        continue;
+                    }
+                    if (value instanceof Date) {
+                        value = DateUtil.dateToString((Date) value, excelHeader.dateFormat());
+                    }
+                    Cell cell = row.createCell(excelHeader.colunmIndex());
+                    cell.setCellValue((value != null) ? value.toString() : "");
+                    cell.setCellStyle(cs);
+                }
+            }
+            // 写出Excel
+            wb.write(outputStream);
+            wb.close();
+        } catch (Exception e) {
+            throw new ExcelException("导出处理出错", e);
+        }
+
+    }
 }
