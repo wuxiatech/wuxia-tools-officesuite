@@ -8,6 +8,7 @@ import com.aspose.words.Document;
 import com.aspose.words.SaveFormat;
 import com.google.common.collect.Lists;
 import com.itextpdf.text.BadElementException;
+import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.Element;
 import com.itextpdf.text.Image;
 import com.itextpdf.text.pdf.BaseFont;
@@ -18,11 +19,8 @@ import com.itextpdf.text.pdf.parser.ImageRenderInfo;
 import com.itextpdf.text.pdf.parser.PdfReaderContentParser;
 import com.itextpdf.text.pdf.parser.RenderListener;
 import com.itextpdf.text.pdf.parser.TextRenderInfo;
-import com.lowagie.text.DocumentException;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.core.io.ClassPathResource;
-import org.xhtmlrenderer.pdf.ITextFontResolver;
-import org.xhtmlrenderer.pdf.ITextRenderer;
 
 import java.io.*;
 import java.net.URI;
@@ -93,44 +91,44 @@ public class PDFUtil {
     }
 
 
-    /**
-     * 生成 PDF 文件
-     *
-     * @param out  输出流
-     * @param html HTML字符串
-     * @throws IOException       IO异常
-     * @throws DocumentException Document异常
-     */
-    public static void html2pdf(String html, OutputStream out) throws IOException, DocumentException {
-        ITextRenderer renderer = new ITextRenderer();
-        renderer.setDocumentFromString(html);
-        // 解决中文支持问题
-//        ITextFontResolver fontResolver = renderer.getFontResolver();
+//    /**
+//     * 生成 PDF 文件
+//     *
+//     * @param out  输出流
+//     * @param html HTML字符串
+//     * @throws IOException       IO异常
+//     * @throws DocumentException Document异常
+//     */
+//    public static void html2pdf(String html, OutputStream out) throws IOException, com.lowagie.text.DocumentException {
+//        org.xhtmlrenderer.pdf.ITextRenderer renderer = new org.xhtmlrenderer.pdf.ITextRenderer();
+//        renderer.setDocumentFromString(html);
+//        // 解决中文支持问题
+////        ITextFontResolver fontResolver = renderer.getFontResolver();
+////        fontResolver.addFont("pdf/font/fangsong.ttf", BaseFont.IDENTITY_H, BaseFont.NOT_EMBEDDED);
+////        fontResolver.addFont("pdf/font/PingFangSC.ttf", BaseFont.IDENTITY_H, BaseFont.NOT_EMBEDDED);
+//        renderer.layout();
+//        renderer.createPDF(out);
+//    }
+//
+//
+//    /**
+//     * 生成 PDF 文件
+//     *
+//     * @param out  输出流
+//     * @param file HTML文件
+//     * @throws IOException       IO异常
+//     * @throws DocumentException Document异常
+//     */
+//    public static void html2pdf(File file, OutputStream out) throws IOException, com.lowagie.text.DocumentException {
+//        org.xhtmlrenderer.pdf.ITextRenderer renderer = new org.xhtmlrenderer.pdf.ITextRenderer();
+//        renderer.setDocument(file);
+//        // 解决中文支持问题
+//        org.xhtmlrenderer.pdf.ITextFontResolver fontResolver = renderer.getFontResolver();
 //        fontResolver.addFont("pdf/font/fangsong.ttf", BaseFont.IDENTITY_H, BaseFont.NOT_EMBEDDED);
-//        fontResolver.addFont("pdf/font/PingFangSC.ttf", BaseFont.IDENTITY_H, BaseFont.NOT_EMBEDDED);
-        renderer.layout();
-        renderer.createPDF(out);
-    }
-
-
-    /**
-     * 生成 PDF 文件
-     *
-     * @param out  输出流
-     * @param file HTML文件
-     * @throws IOException       IO异常
-     * @throws DocumentException Document异常
-     */
-    public static void html2pdf(File file, OutputStream out) throws IOException, DocumentException {
-        ITextRenderer renderer = new ITextRenderer();
-        renderer.setDocument(file);
-        // 解决中文支持问题
-        ITextFontResolver fontResolver = renderer.getFontResolver();
-        fontResolver.addFont("pdf/font/fangsong.ttf", BaseFont.IDENTITY_H, BaseFont.NOT_EMBEDDED);
-//        fontResolver.addFont("pdf/font/PingFangSC.ttf", BaseFont.IDENTITY_H, BaseFont.NOT_EMBEDDED);
-        renderer.layout();
-        renderer.createPDF(out);
-    }
+////        fontResolver.addFont("pdf/font/PingFangSC.ttf", BaseFont.IDENTITY_H, BaseFont.NOT_EMBEDDED);
+//        renderer.layout();
+//        renderer.createPDF(out);
+//    }
 
 
     //

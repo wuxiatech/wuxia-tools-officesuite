@@ -11,7 +11,7 @@
     <artifactId>wuxia.officesuite-tool</artifactId>
     <name>WUXIA Office Suite</name>
     <description>WUXIA Tools Office Suite Project</description>
-    <version>2.3.8</version>
+    <version>2.3.8.1</version>
     <packaging>jar</packaging>
     <url>https://github.com/wuxiatech/wuxia-tools-oficesuite</url>
     <properties>
@@ -63,11 +63,11 @@
             <version>5.4.2</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.xhtmlrenderer</groupId>
-            <artifactId>core-renderer</artifactId>
-            <version>R8</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.xhtmlrenderer</groupId>-->
+<!--            <artifactId>core-renderer</artifactId>-->
+<!--            <version>R8</version>-->
+<!--        </dependency>-->
 
         <!-- Test lib -->
         <dependency>
