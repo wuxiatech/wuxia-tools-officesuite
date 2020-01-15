@@ -100,7 +100,7 @@ public class ImportExcelUtil {
      * @throws InvalidFormatException
      * @throws EncryptedDocumentException
      * @author songlin.li
-     * @see {@link com.alibaba.excel.EasyExcelFactory#read(InputStream, new Sheet(1, 1,BaseRowModel.class))};
+     * @see {@link com.alibaba.excel.EasyExcelFactory#read(InputStream, com.alibaba.excel.metadata.Sheet)} };
      */
     public static <T> List<T> importExcel(InputStream inputStream, Class<T> clazz, int sheetIndex)
             throws ExcelException, EncryptedDocumentException, IOException {
