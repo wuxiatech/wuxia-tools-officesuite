@@ -16,7 +16,7 @@
     <url>https://github.com/wuxiatech/wuxia-tools-oficesuite</url>
     <properties>
         <wuxia-common.version>2.5.0</wuxia-common.version>
-        <poi.version>4.0.1</poi.version>
+        <poi.version>4.1.1</poi.version>
     </properties>
     <developers>
         <developer>
